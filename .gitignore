@@ -2,3 +2,6 @@ build/
 lib.js
 test.js
 .env.local
+libuv
+.vscode
+sample.txt
