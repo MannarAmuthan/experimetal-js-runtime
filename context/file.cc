@@ -25,12 +25,20 @@ namespace file {
     static char* file_content;
     static int size = 0;
 
+    static int isWriteMode = 0;
+
     void on_write(uv_fs_t *req) {
         if (req->result < 0) {
             fprintf(stderr, "Write error: %s\n", uv_strerror((int)req->result));
         }
         else {
-            uv_fs_read(uv_default_loop(), &read_req, open_req.result, &iov, 1, -1, on_read);
+            if(isWriteMode == 0){
+                uv_fs_read(uv_default_loop(), &read_req, open_req.result, &iov, 1, -1, on_read);
+            }
+            else{
+                uv_fs_t close_req;
+                uv_fs_close(uv_default_loop(), &close_req, open_req.result, NULL);
+            }
         }
     }
 
@@ -57,9 +65,17 @@ namespace file {
         // function was passed.
         assert(req == &open_req);
         if (req->result >= 0) {
-            iov = uv_buf_init(buffer, sizeof(buffer));
-            uv_fs_read(uv_default_loop(), &read_req, req->result,
-                    &iov, 1, -1, on_read);
+            if(isWriteMode == 0){
+                iov = uv_buf_init(buffer, sizeof(buffer));
+                uv_fs_read(uv_default_loop(), &read_req, req->result,
+                        &iov, 1, -1, on_read);
+            }
+            else{
+
+                iov = uv_buf_init((char*)req->data, strlen((char*)req->data));
+                uv_fs_write(uv_default_loop(), &write_req, req->result,
+                        &iov, 1, -1, on_write);
+            }
         }
         else {
             fprintf(stderr, "error opening file: %s\n", uv_strerror((int)req->result));
@@ -82,8 +98,18 @@ namespace file {
     }
 
     void write_file(const char* name, const char* data) {
-        printf("%s", name);
-        printf("%s", data);
+        uv_loop_t* loop = uv_default_loop();
+        int flags = O_CREAT | O_WRONLY | O_TRUNC;
+        int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH; // File permissions
+        isWriteMode = 1;
+        open_req.data = (void*)data;
+        uv_fs_open(uv_default_loop(), &open_req, name, flags, mode, on_open);
+
+        uv_run(loop, UV_RUN_DEFAULT);
+
+        uv_fs_req_cleanup(&open_req);
+        uv_fs_req_cleanup(&read_req);
+        uv_fs_req_cleanup(&write_req);
     }
     
     void Read(const v8::FunctionCallbackInfo<v8::Value>& info) {
