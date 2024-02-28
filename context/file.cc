@@ -35,7 +35,7 @@ namespace file {
             if(isWriteMode == 0){
                 uv_fs_read(uv_default_loop(), &read_req, open_req.result, &iov, 1, -1, on_read);
             }
-            else{
+            else {
                 uv_fs_t close_req;
                 uv_fs_close(uv_default_loop(), &close_req, open_req.result, NULL);
             }
@@ -139,7 +139,6 @@ namespace file {
     }
 
     void Write(const v8::FunctionCallbackInfo<v8::Value>& info) {
-        bool first = true;
         char* file_name;
         char* incoming_data;
         for (int i = 0; i < info.Length(); i++) {

@@ -1,5 +1,6 @@
 #include <context/context.h>
 #include <context/file.h>
+#include <context/request.h>
 
 
 namespace context {
@@ -179,6 +180,8 @@ v8::Local<v8::Context> get_context(v8::Isolate* isolate) {
   global->Set(isolate, "version", v8::FunctionTemplate::New(isolate, Version));
 
   file::add(global, isolate);
+  request::add(global, isolate);
+
   return v8::Context::New(isolate, NULL, global);
 }
 
